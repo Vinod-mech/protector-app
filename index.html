@@ -14,7 +14,6 @@
       background: linear-gradient(135deg, #1e3c72, #2a5298);
       font-family: Arial, sans-serif;
       color: #fff;
-      margin: 0;
     }
     .container {
       background: rgba(0, 0, 0, 0.4);
@@ -22,8 +21,6 @@
       border-radius: 15px;
       text-align: center;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-      max-width: 500px;
-      width: 90%;
     }
     input {
       padding: 10px;
@@ -31,7 +28,6 @@
       border: none;
       border-radius: 5px;
       width: 200px;
-      max-width: 100%;
     }
     button {
       padding: 10px 20px;
@@ -40,42 +36,13 @@
       background-color: #4caf50;
       color: white;
       cursor: pointer;
-      margin: 5px;
     }
     button:hover {
       background-color: #45a049;
     }
     .error {
-      color: #ff6b6b;
+      color: red;
       margin-top: 10px;
-    }
-    .success {
-      color: #4caf50;
-      margin-top: 10px;
-    }
-    textarea {
-      width: 100%;
-      height: 200px;
-      margin: 10px 0;
-      padding: 10px;
-      border: none;
-      border-radius: 5px;
-      resize: vertical;
-    }
-    .config-section {
-      margin: 20px 0;
-      padding: 15px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-    }
-    .back-btn {
-      background-color: #666;
-      position: absolute;
-      top: 20px;
-      left: 20px;
-    }
-    .back-btn:hover {
-      background-color: #555;
     }
   </style>
 </head>
@@ -91,26 +58,10 @@
   </div>
 
   <script>
-    // Configuration - Edit these values to change passwords and content
-    const CONFIG = {
-      adminPass: "191",
-      secondaryPass: "201",
-      userWebsite: `
-        <div style="text-align: center; color: white; font-family: Arial, sans-serif; padding: 50px;">
-          <h1>Welcome to the User Area</h1>
-          <p>This is the default user website content.</p>
-          <p>To customize this, edit the CONFIG.userWebsite section in the HTML file.</p>
-          <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 10px; margin: 20px;">
-            <h3>Sample Content</h3>
-            <p>You can add any HTML content here!</p>
-            <button onclick="alert('Hello from the user area!')" style="padding: 10px 20px; border: none; border-radius: 5px; background: #4caf50; color: white; cursor: pointer;">Click Me</button>
-          </div>
-          <button onclick="location.reload()" style="padding: 10px 20px; border: none; border-radius: 5px; background: #666; color: white; cursor: pointer; margin-top: 20px;">Back to Code Entry</button>
-        </div>
-      `
-    };
-
     let uniqueCode = generateUniqueCode();
+    let adminPass = localStorage.getItem("adminPass") || "191";
+    let secondaryPass = localStorage.getItem("secondaryPass") || "201";
+
     document.getElementById("uniqueCode").innerText = uniqueCode;
 
     function generateUniqueCode() {
@@ -127,7 +78,7 @@
 
       if (entered === uniqueCode.toString()) {
         loadUserWebsite();
-      } else if (entered === CONFIG.adminPass || entered === CONFIG.secondaryPass) {
+      } else if (entered === adminPass || entered === secondaryPass) {
         loadAdminPage();
       } else {
         document.getElementById("errorMsg").innerText = "Wrong code";
@@ -139,80 +90,76 @@
     }
 
     function loadUserWebsite() {
-      document.body.innerHTML = CONFIG.userWebsite;
+      let userHTML = localStorage.getItem("userWebsite");
+      if (userHTML) {
+        document.body.innerHTML = userHTML;
+      } else {
+        document.body.innerHTML = "<h2 style='color:white;text-align:center;'>No website available for users yet</h2>";
+      }
     }
 
     function loadAdminPage() {
       document.body.innerHTML = `
-        <button class="back-btn" onclick="location.reload()">← Back</button>
         <div class="container">
           <h1>Admin Settings</h1>
-          <p style="color: #ffeb3b; margin-bottom: 20px;">
-            <strong>Note:</strong> To make permanent changes, edit the CONFIG object in the HTML file and re-upload to GitHub.
-          </p>
-          
-          <div class="config-section">
-            <h3>Current Configuration</h3>
-            <p><strong>Admin Password:</strong> ${CONFIG.adminPass}</p>
-            <p><strong>Secondary Password:</strong> ${CONFIG.secondaryPass}</p>
-            <button onclick="showEditMode()">Edit Configuration</button>
-          </div>
+          <label>Change Admin Password (current: ${adminPass}):</label><br />
+          <input type="text" id="newPass" placeholder="Enter new admin password" /><br />
+          <button onclick="changePassword('admin')">Update Admin Password</button>
+          <br /><br />
 
-          <div class="config-section">
-            <h3>User Website Preview</h3>
-            <button onclick="previewUserWebsite()">Preview User Website</button>
-          </div>
+          <label>Change Secondary Password (current: ${secondaryPass}):</label><br />
+          <input type="text" id="newPass2" placeholder="Enter new secondary password" /><br />
+          <button onclick="changePassword('secondary')">Update Secondary Password</button>
+          <br /><br />
+
+          <label>Upload Website HTML:</label><br />
+          <input type="file" id="fileInput" /><br /><br />
+          <button onclick="uploadWebsite()">Upload</button>
+          <br /><br />
+
+          <button onclick="clearWebsite()" style="background-color:red;">Remove Uploaded Website</button>
         </div>
       `;
     }
 
-    function showEditMode() {
-      document.body.innerHTML = `
-        <button class="back-btn" onclick="loadAdminPage()">← Back to Admin</button>
-        <div class="container">
-          <h1>Edit Configuration</h1>
-          <div style="text-align: left;">
-            <p style="color: #ffeb3b; margin-bottom: 20px;">
-              <strong>Instructions:</strong> Copy this configuration, edit the values you want to change, then replace the CONFIG object in your HTML file.
-            </p>
-            
-            <h3>Configuration Code:</h3>
-            <textarea id="configText" readonly>const CONFIG = {
-  adminPass: "${CONFIG.adminPass}",
-  secondaryPass: "${CONFIG.secondaryPass}",
-  userWebsite: \`${CONFIG.userWebsite.replace(/`/g, '\\`')}\`
-};</textarea>
-            
-            <button onclick="copyToClipboard()">Copy Configuration</button>
-            <p id="copyMsg" class="success" style="display: none;">Configuration copied to clipboard!</p>
-            
-            <div style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 10px;">
-              <h4>How to Update:</h4>
-              <ol style="text-align: left;">
-                <li>Copy the configuration above</li>
-                <li>Edit your HTML file</li>
-                <li>Replace the existing CONFIG object with your modified version</li>
-                <li>Save and upload the file to GitHub</li>
-                <li>Changes will be live for everyone!</li>
-              </ol>
-            </div>
-          </div>
-        </div>
-      `;
+    function changePassword(type) {
+      if (type === "admin") {
+        let newPass = document.getElementById("newPass").value.trim();
+        if (newPass) {
+          localStorage.setItem("adminPass", newPass);
+          alert("Admin password updated successfully!");
+        } else {
+          alert("Enter valid password");
+        }
+      } else if (type === "secondary") {
+        let newPass2 = document.getElementById("newPass2").value.trim();
+        if (newPass2) {
+          localStorage.setItem("secondaryPass", newPass2);
+          alert("Secondary password updated successfully!");
+        } else {
+          alert("Enter valid password");
+        }
+      }
     }
 
-    function previewUserWebsite() {
-      document.body.innerHTML = CONFIG.userWebsite;
+    function uploadWebsite() {
+      let fileInput = document.getElementById("fileInput");
+      let file = fileInput.files[0];
+      if (!file) {
+        alert("Please select a file");
+        return;
+      }
+      let reader = new FileReader();
+      reader.onload = function (e) {
+        localStorage.setItem("userWebsite", e.target.result);
+        alert("Website uploaded successfully!");
+      };
+      reader.readAsText(file);
     }
 
-    function copyToClipboard() {
-      const configText = document.getElementById('configText');
-      configText.select();
-      document.execCommand('copy');
-      document.getElementById('copyMsg').style.display = 'block';
-      setTimeout(() => {
-        document.getElementById('copyMsg').style.display = 'none';
-      }, 3000);
+    function clearWebsite() {
+      localStorage.removeItem("userWebsite");
+      alert("User website removed successfully!");
     }
   </script>
 </body>
