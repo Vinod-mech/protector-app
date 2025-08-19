@@ -14,6 +14,7 @@
       background: linear-gradient(135deg, #1e3c72, #2a5298);
       font-family: Arial, sans-serif;
       color: #fff;
+      margin: 0;
     }
     .container {
       background: rgba(0, 0, 0, 0.4);
@@ -21,6 +22,8 @@
       border-radius: 15px;
       text-align: center;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      max-width: 500px;
+      width: 90%;
     }
     input {
       padding: 10px;
@@ -28,6 +31,7 @@
       border: none;
       border-radius: 5px;
       width: 200px;
+      max-width: 100%;
     }
     button {
       padding: 10px 20px;
@@ -36,6 +40,7 @@
       background-color: #4caf50;
       color: white;
       cursor: pointer;
+      margin: 5px;
     }
     button:hover {
       background-color: #45a049;
@@ -43,6 +48,24 @@
     .error {
       color: red;
       margin-top: 10px;
+    }
+    .back-btn {
+      background-color: #666;
+      position: absolute;
+      top: 20px;
+      left: 20px;
+    }
+    .back-btn:hover {
+      background-color: #555;
+    }
+    textarea {
+      width: 90%;
+      height: 150px;
+      margin: 10px 0;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      resize: vertical;
     }
   </style>
 </head>
@@ -58,9 +81,25 @@
   </div>
 
   <script>
+    // CONFIGURATION - Edit these values to change settings for everyone
+    const DEFAULT_CONFIG = {
+      adminPass: "191",
+      secondaryPass: "201",
+      defaultUserWebsite: `
+        <div style="text-align: center; color: white; font-family: Arial, sans-serif; padding: 50px; background: linear-gradient(135deg, #1e3c72, #2a5298); min-height: 100vh; margin: 0;">
+          <div style="background: rgba(0,0,0,0.4); padding: 30px; border-radius: 15px; max-width: 600px; margin: 0 auto;">
+            <h1>Welcome to the User Area</h1>
+            <p>This is the default user website content.</p>
+            <p>Admins can customize this content and upload HTML files.</p>
+            <button onclick="location.reload()" style="padding: 10px 20px; border: none; border-radius: 5px; background: #666; color: white; cursor: pointer; margin-top: 20px;">Back to Code Entry</button>
+          </div>
+        </div>
+      `
+    };
+
     let uniqueCode = generateUniqueCode();
-    let adminPass = localStorage.getItem("adminPass") || "191";
-    let secondaryPass = localStorage.getItem("secondaryPass") || "201";
+    let adminPass = localStorage.getItem("adminPass") || DEFAULT_CONFIG.adminPass;
+    let secondaryPass = localStorage.getItem("secondaryPass") || DEFAULT_CONFIG.secondaryPass;
 
     document.getElementById("uniqueCode").innerText = uniqueCode;
 
@@ -94,73 +133,156 @@
       if (userHTML) {
         document.body.innerHTML = userHTML;
       } else {
-        document.body.innerHTML = "<h2 style='color:white;text-align:center;'>No website available for users yet</h2>";
+        document.body.innerHTML = DEFAULT_CONFIG.defaultUserWebsite;
       }
     }
 
     function loadAdminPage() {
       document.body.innerHTML = `
+        <button class="back-btn" onclick="location.reload()">← Back</button>
         <div class="container">
           <h1>Admin Settings</h1>
+          <p style="color: #ffeb3b; margin-bottom: 20px;">
+            <strong>Note:</strong> Password changes and uploads are saved locally on this browser only.
+          </p>
+          
           <label>Change Admin Password (current: ${adminPass}):</label><br />
           <input type="text" id="newPass" placeholder="Enter new admin password" /><br />
-          <button onclick="changePassword('admin')">Update Admin Password</button>
+          <button onclick="window.changePassword('admin')">Update Admin Password</button>
           <br /><br />
 
           <label>Change Secondary Password (current: ${secondaryPass}):</label><br />
           <input type="text" id="newPass2" placeholder="Enter new secondary password" /><br />
-          <button onclick="changePassword('secondary')">Update Secondary Password</button>
+          <button onclick="window.changePassword('secondary')">Update Secondary Password</button>
           <br /><br />
 
           <label>Upload Website HTML:</label><br />
-          <input type="file" id="fileInput" /><br /><br />
-          <button onclick="uploadWebsite()">Upload</button>
+          <input type="file" id="fileInput" accept=".html,.htm,.txt" /><br /><br />
+          <button onclick="window.uploadWebsite()">Upload</button>
           <br /><br />
 
-          <button onclick="clearWebsite()" style="background-color:red;">Remove Uploaded Website</button>
+          <button onclick="window.clearWebsite()" style="background-color:red;">Remove Uploaded Website</button>
+          <br /><br />
+
+          <button onclick="window.editWebsiteText()">Edit Website as Text</button>
+          <br /><br />
+
+          <button onclick="window.showDefaultConfig()">Show Default Configuration</button>
+          
+          <p id="adminMessage" style="margin-top: 15px;"></p>
         </div>
       `;
     }
 
-    function changePassword(type) {
+    // Make functions globally accessible
+    window.changePassword = function(type) {
       if (type === "admin") {
         let newPass = document.getElementById("newPass").value.trim();
         if (newPass) {
           localStorage.setItem("adminPass", newPass);
-          alert("Admin password updated successfully!");
+          adminPass = newPass;
+          document.getElementById("adminMessage").innerHTML = "<span style='color: #4caf50;'>Admin password updated successfully!</span>";
+          document.getElementById("newPass").value = "";
         } else {
-          alert("Enter valid password");
+          document.getElementById("adminMessage").innerHTML = "<span style='color: red;'>Enter valid password</span>";
         }
       } else if (type === "secondary") {
         let newPass2 = document.getElementById("newPass2").value.trim();
         if (newPass2) {
           localStorage.setItem("secondaryPass", newPass2);
-          alert("Secondary password updated successfully!");
+          secondaryPass = newPass2;
+          document.getElementById("adminMessage").innerHTML = "<span style='color: #4caf50;'>Secondary password updated successfully!</span>";
+          document.getElementById("newPass2").value = "";
         } else {
-          alert("Enter valid password");
+          document.getElementById("adminMessage").innerHTML = "<span style='color: red;'>Enter valid password</span>";
         }
       }
     }
 
-    function uploadWebsite() {
+    window.uploadWebsite = function() {
       let fileInput = document.getElementById("fileInput");
       let file = fileInput.files[0];
       if (!file) {
-        alert("Please select a file");
+        document.getElementById("adminMessage").innerHTML = "<span style='color: red;'>Please select a file</span>";
         return;
       }
       let reader = new FileReader();
       reader.onload = function (e) {
         localStorage.setItem("userWebsite", e.target.result);
-        alert("Website uploaded successfully!");
+        document.getElementById("adminMessage").innerHTML = "<span style='color: #4caf50;'>Website uploaded successfully!</span>";
+        fileInput.value = "";
       };
       reader.readAsText(file);
     }
 
-    function clearWebsite() {
+    window.clearWebsite = function() {
       localStorage.removeItem("userWebsite");
-      alert("User website removed successfully!");
+      document.getElementById("adminMessage").innerHTML = "<span style='color: #4caf50;'>User website removed successfully!</span>";
     }
+
+    window.editWebsiteText = function() {
+      let currentContent = localStorage.getItem("userWebsite") || DEFAULT_CONFIG.defaultUserWebsite;
+      document.body.innerHTML = `
+        <button class="back-btn" onclick="window.loadAdminPage()">← Back to Admin</button>
+        <div class="container">
+          <h1>Edit Website Content</h1>
+          <p style="color: #ffeb3b;">Edit the HTML content below:</p>
+          <textarea id="websiteContent" placeholder="Enter HTML content">${currentContent}</textarea>
+          <br />
+          <button onclick="window.saveWebsiteText()">Save Changes</button>
+          <button onclick="window.previewWebsite()">Preview</button>
+          <p id="editMessage" style="margin-top: 15px;"></p>
+        </div>
+      `;
+    }
+
+    window.saveWebsiteText = function() {
+      let content = document.getElementById("websiteContent").value;
+      if (content.trim()) {
+        localStorage.setItem("userWebsite", content);
+        document.getElementById("editMessage").innerHTML = "<span style='color: #4caf50;'>Website content saved successfully!</span>";
+      } else {
+        document.getElementById("editMessage").innerHTML = "<span style='color: red;'>Please enter some content</span>";
+      }
+    }
+
+    window.previewWebsite = function() {
+      let content = document.getElementById("websiteContent").value;
+      if (content.trim()) {
+        let previewWindow = window.open("", "_blank");
+        previewWindow.document.write(content);
+        previewWindow.document.close();
+      } else {
+        document.getElementById("editMessage").innerHTML = "<span style='color: red;'>No content to preview</span>";
+      }
+    }
+
+    window.showDefaultConfig = function() {
+      document.body.innerHTML = `
+        <button class="back-btn" onclick="window.loadAdminPage()">← Back to Admin</button>
+        <div class="container" style="text-align: left;">
+          <h1>Default Configuration</h1>
+          <p style="color: #ffeb3b;">To make permanent changes for everyone, edit these values in the HTML file:</p>
+          <textarea readonly style="width: 95%; height: 300px; font-family: monospace; font-size: 12px;">const DEFAULT_CONFIG = {
+  adminPass: "${DEFAULT_CONFIG.adminPass}",
+  secondaryPass: "${DEFAULT_CONFIG.secondaryPass}",
+  defaultUserWebsite: \`${DEFAULT_CONFIG.defaultUserWebsite.replace(/`/g, '\\`')}\`
+};</textarea>
+          <br />
+          <button onclick="window.copyConfig()">Copy Configuration</button>
+          <p id="configMessage" style="margin-top: 15px;"></p>
+        </div>
+      `;
+    }
+
+    window.copyConfig = function() {
+      let textarea = document.querySelector('textarea');
+      textarea.select();
+      document.execCommand('copy');
+      document.getElementById("configMessage").innerHTML = "<span style='color: #4caf50;'>Configuration copied to clipboard!</span>";
+    }
+
+    window.loadAdminPage = loadAdminPage;
   </script>
 </body>
 </html>
